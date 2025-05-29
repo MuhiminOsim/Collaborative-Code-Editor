@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collaborative Code Editor</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="node_modules/monaco-editor/min/vs/editor/editor.main.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .top-section {
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        .connection-form {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .connection-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .url-input {
+            flex: 1;
+            padding: 10px;
+            background-color: #3d3d3d;
+            border: 1px solid #505050;
+            color: white;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .button:hover {
+            background-color: #0052a3;
+        }
+        .button.host {
+            background-color: #2ea043;
+        }
+        .button.host:hover {
+            background-color: #2c974b;
+        }
+        .button.disconnect {
+            background-color: #cc0000;
+        }
+        .button.disconnect:hover {
+            background-color: #aa0000;
+        }
+        .status-bar {
+            background-color: #2d2d2d;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cc0000;
+        }
+        .status-indicator.connected {
+            background-color: #00cc00;
+        }
+        #editor-container {
+            flex-grow: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            border: 1px solid #2d2d2d;
+            min-height: 500px;
+        }
+        .error {
+            background-color: #cc0000;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        .session-info {
+            display: none;
+            margin-top: 10px;
+        }
+        .session-url {
+            font-family: monospace;
+            color: #4CAF50;
+            word-break: break-all;
+        }
+        .connected-view {
+            display: none;
+            background-color: #2d2d2d;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .connected-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-section">
+        <!-- Initial View -->
+        <div id="initial-view" class="connection-form">
+            <div class="connection-controls">
+                <input type="text" id="session-url" class="url-input" placeholder="Enter session URL to connect" />
+                <button id="connect-button" class="button">Connect</button>
+                <button id="host-button" class="button host">Start New Session</button>
+            </div>
+            <div id="session-info" class="session-info">
+                Share this URL with others to collaborate: 
+                <div id="share-url" class="session-url"></div>
+            </div>
+        </div>
+
+        <!-- Connected View -->
+        <div id="connected-view" class="connected-view" style="display: none;">
+            <div class="connected-info">
+                <div class="connection-status">
+                    <div id="status-indicator-compact" class="status-indicator connected"></div>
+                    <span>Connected</span>
+                </div>
+                <div id="share-url-compact" class="session-url"></div>
+            </div>
+            <button id="disconnect-button" class="button disconnect">Disconnect</button>
+        </div>
+    </div>
+
+    <div id="error-message" class="error"></div>
+    <div id="editor-container"></div>
+
+    <script>var require = { paths: { 'vs': 'node_modules/monaco-editor/min/vs' } };</script>
+    <script src="node_modules/monaco-editor/min/vs/loader.js"></script>
+    <script src="node_modules/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+    <script src="node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
+
+    <script>
+        let editor;
+        let socket;
+        let isUpdating = false;
+        let isHosting = false;
+
+        // Initialize Monaco Editor
+        window.onload = function() {
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: '// Start a new session or connect to an existing one...',
+                language: 'javascript',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: {
+                    enabled: true
+                },
+                fontSize: 14,
+                lineNumbers: 'on',
+                roundedSelection: false,
+                scrollBeyondLastLine: false,
+                readOnly: false,
+                cursorStyle: 'line'
+            });
+
+            window.addEventListener('resize', function() {
+                editor.layout();
+            });
+        };
+
+        // Handle connection
+        document.getElementById('connect-button').addEventListener('click', () => {
+            const url = document.getElementById('session-url').value.trim();
+            if (!url) {
+                showError('Please enter a session URL');
+                return;
+            }
+            connectToSession(url);
+        });
+
+        // Handle hosting
+        document.getElementById('host-button').addEventListener('click', () => {
+            const port = window.location.port;
+            const url = `http://localhost:${port}`;
+            document.getElementById('share-url').textContent = url;
+            document.getElementById('share-url-compact').textContent = url;
+            connectToSession(url);
+            isHosting = true;
+        });
+
+        // Handle disconnect
+        document.getElementById('disconnect-button').addEventListener('click', () => {
+            if (socket) {
+                socket.disconnect();
+            }
+            showInitialView();
+            editor.setValue('// Start a new session or connect to an existing one...');
+        });
+
+        function showConnectedView(url) {
+            document.getElementById('initial-view').style.display = 'none';
+            document.getElementById('connected-view').style.display = 'flex';
+            if (url) {
+                document.getElementById('share-url-compact').textContent = url;
+            }
+        }
+
+        function showInitialView() {
+            document.getElementById('initial-view').style.display = 'flex';
+            document.getElementById('connected-view').style.display = 'none';
+            document.getElementById('session-info').style.display = 'none';
+            document.getElementById('session-url').value = '';
+            isHosting = false;
+        }
+
+        function connectToSession(url) {
+            try {
+                if (socket) {
+                    socket.disconnect();
+                }
+
+                socket = io(url);
+
+                socket.on('connect', () => {
+                    showConnectedView(isHosting ? url : null);
+                    document.getElementById('error-message').style.display = 'none';
+                });
+
+                socket.on('disconnect', () => {
+                    showInitialView();
+                });
+
+                socket.on('connect_error', (error) => {
+                    showError('Failed to connect: ' + error.message);
+                });
+
+                socket.on('initial-code', (code) => {
+                    isUpdating = true;
+                    editor.setValue(code || '// Start coding here...');
+                    isUpdating = false;
+                });
+
+                socket.on('code-update', (newCode) => {
+                    if (newCode !== editor.getValue()) {
+                        isUpdating = true;
+                        editor.setValue(newCode);
+                        isUpdating = false;
+                    }
+                });
+
+                editor.onDidChangeModelContent((event) => {
+                    if (!isUpdating && socket && socket.connected) {
+                        const code = editor.getValue();
+                        socket.emit('code-change', code);
+                    }
+                });
+
+            } catch (error) {
+                showError('Invalid URL or connection error');
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 
