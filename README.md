@@ -1,128 +1,67 @@
 # Collaborative Code Editor
 
-A real-time collaborative code editor that allows multiple users to edit code simultaneously. The project consists of a web client, desktop application, and server component.
-
-## Features
-
-- Real-time code collaboration
-- Syntax highlighting
-- Desktop application support
-- Multiple user cursors
-- Live code synchronization
-- Cross-platform compatibility (Web & Desktop)
+A real-time collaborative code editor that enables multiple users to work on code simultaneously. This project consists of a desktop application built with Electron and a web client interface.
 
 ## Project Structure
 
 ```
-.
-├── client/         # Web client application
-├── desktop-app/    # Electron-based desktop application
-└── server/         # Backend server
+collaborative-editor/
+├── client/           # Web client application (React + TypeScript + Vite)
+├── desktop-app/      # Electron-based desktop application
+└── docs/            # Additional documentation
 ```
 
-## Prerequisites
+## Components
 
-Before you begin, ensure you have the following installed:
-- Node.js (v14.0.0 or higher)
-- npm or yarn
-- Git
+### Desktop Application
 
-## Installation
+The desktop application is an Electron-based collaborative code editor. For detailed information about the desktop app, including build and installation instructions, see the [desktop-app README](desktop-app/README.md).
+
+**Current Build Status:** Development build available for macOS. Please note that this is currently an unsigned development build and will trigger security warnings on macOS. See the desktop-app README for detailed instructions on handling security warnings.
+
+### Web Client
+
+The web client is built with React, TypeScript, and Vite. For more information about the web client, see the [client README](client/README.md).
+
+## Getting Started
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/MuhiminOsim/Collaborative-Code-Editor.git
-cd Collaborative-Code-Editor
+git clone https://github.com/yourusername/collaborative-editor.git
+cd collaborative-editor
 ```
 
-2. Install dependencies for each component:
+2. Choose your preferred interface:
+   - For desktop application: Follow instructions in [desktop-app/README.md](desktop-app/README.md)
+   - For web client: Follow instructions in [client/README.md](client/README.md)
 
-For the web client:
-```bash
-cd client
-npm install
-```
+## Development Status
 
-For the desktop app:
-```bash
-cd desktop-app
-npm install
-```
+- ✅ Basic real-time collaboration
+- ✅ Desktop application (macOS development build)
+- ✅ Web client interface
+- 🚧 Code signing and notarization (in progress)
+- 🚧 Windows and Linux support (planned)
 
-For the server:
-```bash
-cd server
-npm install
-```
+## Known Issues
 
-## Running the Application
+### macOS Security Warnings
 
-### Start the Server
+The current development build will trigger security warnings on macOS due to being unsigned. This is a known issue that we're actively working on. For now, users can:
 
-```bash
-cd server
-npm start
-```
+1. Right-click the app and select "Open" to bypass the warning
+2. Go to System Preferences > Security & Privacy to allow the app to run
 
-### Start the Web Client
-
-```bash
-cd client
-npm run dev
-```
-
-### Start the Desktop App
-
-```bash
-cd desktop-app
-npm start
-```
-
-## Building the Desktop App
-
-To build the desktop application:
-
-```bash
-cd desktop-app
-npm run build
-```
-
-The built application will be available in the `desktop-app/dist` directory.
-
-## Development
-
-### Web Client
-The web client is built with:
-- React
-- TypeScript
-- Vite
-
-### Desktop App
-The desktop application is built with:
-- Electron
-- React
-- TypeScript
-
-### Server
-The server is built with:
-- Node.js
-- Express
-- Socket.IO
+We're working on implementing proper code signing and notarization for future releases.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the ISC License - see the LICENSE file for details.
 
 ## Contact
 
-Muhimin Osim - [GitHub](https://github.com/MuhiminOsim)
-
-Project Link: [https://github.com/MuhiminOsim/Collaborative-Code-Editor](https://github.com/MuhiminOsim/Collaborative-Code-Editor) 
+For questions, suggestions, or issues, please open an issue in the GitHub repository. 
