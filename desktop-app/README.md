@@ -41,13 +41,56 @@ npm start
 
 ## Building the Application
 
-To build the application for distribution:
+### Development Build (macOS)
 
-### macOS
+Currently, we provide an unsigned development build for macOS. To build the application:
+
 ```bash
+# Install dependencies
+npm install
+
+# Create development build
 npm run dist
 ```
-This will create a `.dmg` file in the `dist` directory.
+
+The build will be available in the `dist/mac-arm64` directory.
+
+### Installing the Development Build
+
+Since this is an unsigned development build, you'll encounter security warnings when trying to run the application. Here's how to handle them:
+
+1. **First Launch:**
+   - Locate the app in Finder
+   - Right-click (or Control-click) the app
+   - Select "Open" from the context menu
+   - Click "Open" in the security dialog
+
+2. **Alternative Method:**
+   - Try to open the app normally (it will be blocked)
+   - Go to System Preferences > Security & Privacy > General
+   - Look for a message about the blocked app
+   - Click "Open Anyway"
+
+### Distribution Notes
+
+For distributing the development build within a local network:
+
+1. **Sharing the Build:**
+   - Zip the `.app` directory from `dist/mac-arm64`
+   - Share the zip file with other users
+   - Recipients should follow the installation steps above
+
+2. **Network Usage:**
+   - Ensure all users are on the same local network
+   - The app will automatically handle port management
+   - Share the session URL displayed in the app
+
+### Future Updates
+
+We are actively working on:
+- Implementing proper code signing and notarization
+- Creating signed builds for distribution
+- Adding Windows and Linux support
 
 ### Windows (Coming Soon)
 ```bash
@@ -156,6 +199,11 @@ When adding new features:
    - Reinstall dependencies
    - Check console for errors
 
+4. **Security Warnings**
+   - Follow the installation steps above for handling security warnings
+   - Each user will need to approve the app on their system
+   - Security warnings are expected behavior for development builds
+
 ## Future Enhancements
 
 - [ ] Windows and Linux support
@@ -169,7 +217,7 @@ When adding new features:
 
 ## License
 
-This project is licensed under the ISC License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 

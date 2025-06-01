@@ -69,10 +69,8 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-const localIP = getLocalIP();
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on:`);
-  console.log(`- Local: http://localhost:${PORT}`);
-  console.log(`- Network: http://${localIP}:${PORT}`);
+  const localIP = getLocalIP();
+  console.log(`Server running on: http://${localIP}:${PORT}`);
 }); 

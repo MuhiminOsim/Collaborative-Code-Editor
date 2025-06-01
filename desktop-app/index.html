@@ -212,7 +212,8 @@
         // Handle hosting
         document.getElementById('host-button').addEventListener('click', () => {
             const port = window.location.port;
-            const url = `http://localhost:${port}`;
+            const hostname = window.location.hostname;
+            const url = `http://${hostname}:${port}`;
             document.getElementById('share-url').textContent = url;
             document.getElementById('share-url-compact').textContent = url;
             connectToSession(url);

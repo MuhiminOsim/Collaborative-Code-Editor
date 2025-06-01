@@ -13,12 +13,33 @@ interface CursorPosition {
   column: number;
 }
 
+// Supported languages configuration
+const SUPPORTED_LANGUAGES = [
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'cpp',
+  'csharp',
+  'go',
+  'rust',
+  'ruby',
+  'php',
+  'html',
+  'css',
+  'json',
+  'markdown',
+  'yaml',
+  'sql'
+];
+
 const CollaborativeEditor = () => {
   const socketRef = useRef<Socket | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const isUpdatingRef = useRef(false);
   const [connected, setConnected] = useState(false);
   const [editorValue, setEditorValue] = useState('// Loading...');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
 
   useEffect(() => {
     // Initialize socket connection
@@ -82,6 +103,38 @@ const CollaborativeEditor = () => {
     editorRef.current = editor;
     console.log('Editor mounted');
 
+    // Configure editor features
+    editor.updateOptions({
+      autoIndent: 'advanced',
+      autoClosingBrackets: 'always',
+      autoClosingQuotes: 'always',
+      autoClosingDelete: 'always',
+      autoSurround: 'languageDefined',
+      bracketPairColorization: true,
+      formatOnPaste: true,
+      formatOnType: true,
+      lineNumbers: 'on',
+      minimap: { enabled: true },
+      fontSize: 14,
+      wordWrap: 'on',
+      automaticLayout: true,
+      tabSize: 2,
+      scrollBeyondLastLine: false,
+      renderWhitespace: 'selection',
+      suggestOnTriggerCharacters: true,
+      quickSuggestions: {
+        other: true,
+        comments: true,
+        strings: true
+      },
+      folding: true,
+      foldingStrategy: 'indentation',
+      matchBrackets: 'always',
+      occurrencesHighlight: true,
+      renderIndentGuides: true,
+      snippetSuggestions: 'inline',
+    });
+
     // Set initial value if available
     if (editorValue !== '// Loading...') {
       editor.setValue(editorValue);
@@ -105,29 +158,58 @@ const CollaborativeEditor = () => {
     });
   };
 
+  const handleLanguageChange = (newLanguage: string) => {
+    setSelectedLanguage(newLanguage);
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) {
+        editor.setModelLanguage(model, newLanguage);
+      }
+    }
+  };
+
   return (
     <div style={{ height: '100vh', width: '100%' }}>
       <div style={{ 
         padding: '8px', 
-        backgroundColor: connected ? '#4caf50' : '#f44336',
+        backgroundColor: '#2d2d2d',
         color: 'white',
-        textAlign: 'center' 
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        {connected ? 'Connected to server' : 'Disconnected from server'}
+        <div style={{ 
+          padding: '4px 8px', 
+          backgroundColor: connected ? '#4caf50' : '#f44336',
+          borderRadius: '4px'
+        }}>
+          {connected ? 'Connected to server' : 'Disconnected from server'}
+        </div>
+        <select
+          value={selectedLanguage}
+          onChange={(e) => handleLanguageChange(e.target.value)}
+          style={{
+            padding: '4px 8px',
+            backgroundColor: '#3d3d3d',
+            color: 'white',
+            border: '1px solid #505050',
+            borderRadius: '4px'
+          }}
+        >
+          {SUPPORTED_LANGUAGES.map(lang => (
+            <option key={lang} value={lang}>
+              {lang.charAt(0).toUpperCase() + lang.slice(1)}
+            </option>
+          ))}
+        </select>
       </div>
       <div style={{ height: 'calc(100% - 40px)' }}>
         <Editor
           height="100%"
-          defaultLanguage="javascript"
+          language={selectedLanguage}
           value={editorValue}
           theme="vs-dark"
           onMount={handleEditorDidMount}
-          options={{
-            minimap: { enabled: true },
-            fontSize: 14,
-            wordWrap: 'on',
-            automaticLayout: true,
-          }}
           onChange={(value) => {
             if (value !== undefined) {
               setEditorValue(value);

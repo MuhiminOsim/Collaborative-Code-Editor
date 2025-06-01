@@ -5,22 +5,45 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --mac --config.mac.identity=null --config.mac.target=dir"
+    "build": "webpack --mode production && electron-builder",
+    "pack": "webpack --mode production && electron-builder --dir",
+    "dist": "webpack --mode production && electron-builder --mac --config.mac.identity=null",
+    "webpack": "webpack --mode production",
+    "webpack:dev": "webpack --mode development --watch"
   },
   "build": {
     "appId": "com.collaborative.codeeditor",
     "productName": "Collaborative Code Editor",
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": "dir",
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "build/icon.icns",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "identity": null
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     },
     "files": [
       "**/*",
@@ -41,15 +64,29 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/socket.io-client": "^3.0.0",
     "cors": "^2.8.5",
     "express": "^4.18.3",
     "monaco-editor": "^0.52.2",
-    "socket.io": "^4.7.4"
+    "socket.io": "^4.7.4",
+    "socket.io-client": "^4.7.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.27.3",
+    "@babel/preset-env": "^7.27.2",
     "@electron/notarize": "^2.3.0",
+    "@monaco-editor/react": "^4.7.0",
+    "@types/react": "^19.1.6",
+    "babel-loader": "^10.0.0",
+    "css-loader": "^6.10.0",
     "dotenv": "^16.5.0",
     "electron": "^29.1.4",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "file-loader": "^6.2.0",
+    "monaco-editor-webpack-plugin": "^7.1.0",
+    "path-browserify": "^1.0.1",
+    "style-loader": "^3.3.4",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4"
   }
 }

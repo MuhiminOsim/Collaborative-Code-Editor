@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { Editor } from '@monaco-editor/react';
-import { io, Socket } from 'socket.io-client';
-import { editor } from 'monaco-editor';
+import React, { useEffect, useRef, useState } from 'react';
+import { Editor, Monaco } from '@monaco-editor/react';
+import { io, type Socket } from 'socket.io-client';
+import * as monacoEditor from 'monaco-editor';
 
 // Get the server URL from environment or use a default
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || window.location.hostname;
-const SERVER_PORT = import.meta.env.VITE_SERVER_PORT || '3001';
+const SERVER_URL = window.location.hostname;
+const SERVER_PORT = '3001';
 const SOCKET_URL = `http://${SERVER_URL}:${SERVER_PORT}`;
 
 interface CursorPosition {
@@ -13,12 +13,60 @@ interface CursorPosition {
   column: number;
 }
 
-const CollaborativeEditor = () => {
+// Supported languages configuration
+const SUPPORTED_LANGUAGES = [
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'cpp',
+  'csharp',
+  'go',
+  'rust',
+  'ruby',
+  'php',
+  'html',
+  'css',
+  'json',
+  'markdown',
+  'yaml',
+  'sql'
+];
+
+// Language-specific configurations
+const LANGUAGE_CONFIGS: Record<string, monacoEditor.languages.LanguageConfiguration> = {
+  cpp: {
+    brackets: [
+      ['[', ']'],
+      ['(', ')'],
+      ['{', '}']
+    ] as [string, string][],
+    autoClosingPairs: [
+      { open: '{', close: '}' },
+      { open: '[', close: ']' },
+      { open: '(', close: ')' },
+      { open: '"', close: '"' },
+      { open: "'", close: "'" }
+    ],
+    surroundingPairs: [
+      { open: '{', close: '}' },
+      { open: '[', close: ']' },
+      { open: '(', close: ')' },
+      { open: '"', close: '"' },
+      { open: "'", close: "'" },
+      { open: '<', close: '>' }
+    ]
+  }
+};
+
+const CollaborativeEditor: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
   const isUpdatingRef = useRef(false);
   const [connected, setConnected] = useState(false);
   const [editorValue, setEditorValue] = useState('// Loading...');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
 
   useEffect(() => {
     // Initialize socket connection
@@ -78,9 +126,58 @@ const CollaborativeEditor = () => {
     };
   }, []);
 
-  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
+  const handleEditorDidMount = (editor: monacoEditor.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
     console.log('Editor mounted');
+
+    // Configure editor features
+    editor.updateOptions({
+      autoIndent: 'advanced',
+      autoClosingBrackets: 'always',
+      autoClosingQuotes: 'always',
+      autoClosingDelete: 'auto',
+      autoSurround: 'brackets',
+      formatOnPaste: true,
+      formatOnType: true,
+      lineNumbers: 'on',
+      minimap: { enabled: true },
+      fontSize: 14,
+      wordWrap: 'on',
+      automaticLayout: true,
+      tabSize: 2,
+      scrollBeyondLastLine: false,
+      renderWhitespace: 'selection',
+      suggestOnTriggerCharacters: true,
+      quickSuggestions: {
+        other: true,
+        comments: true,
+        strings: true
+      },
+      folding: true,
+      foldingStrategy: 'indentation',
+      matchBrackets: 'always',
+      occurrencesHighlight: 'singleFile',
+      guides: {
+        indentation: true,
+        bracketPairs: true,
+        highlightActiveIndentation: true,
+        highlightActiveBracketPair: true
+      },
+      snippetSuggestions: 'inline',
+      wordBasedSuggestions: 'matchingDocuments',
+      parameterHints: {
+        enabled: true,
+        cycle: true
+      },
+      suggest: {
+        localityBonus: true,
+        snippetsPreventQuickSuggestions: false,
+        showIcons: true,
+        showStatusBar: true,
+        preview: true
+      }
+    });
 
     // Set initial value if available
     if (editorValue !== '// Loading...') {
@@ -105,33 +202,73 @@ const CollaborativeEditor = () => {
     });
   };
 
+  const handleLanguageChange = (newLanguage: string) => {
+    setSelectedLanguage(newLanguage);
+    if (editorRef.current && monacoRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) {
+        monacoRef.current.editor.setModelLanguage(model, newLanguage);
+        
+        // Apply language-specific configurations
+        if (newLanguage === 'cpp') {
+          monacoRef.current.languages.setLanguageConfiguration('cpp', LANGUAGE_CONFIGS.cpp);
+        }
+      }
+    }
+  };
+
   return (
     <div style={{ height: '100vh', width: '100%' }}>
       <div style={{ 
         padding: '8px', 
-        backgroundColor: connected ? '#4caf50' : '#f44336',
+        backgroundColor: '#2d2d2d',
         color: 'white',
-        textAlign: 'center' 
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        {connected ? 'Connected to server' : 'Disconnected from server'}
+        <div style={{ 
+          padding: '4px 8px', 
+          backgroundColor: connected ? '#4caf50' : '#f44336',
+          borderRadius: '4px'
+        }}>
+          {connected ? 'Connected to server' : 'Disconnected from server'}
+        </div>
+        <select
+          value={selectedLanguage}
+          onChange={(e) => handleLanguageChange(e.target.value)}
+          style={{
+            padding: '4px 8px',
+            backgroundColor: '#3d3d3d',
+            color: 'white',
+            border: '1px solid #505050',
+            borderRadius: '4px'
+          }}
+        >
+          {SUPPORTED_LANGUAGES.map(lang => (
+            <option key={lang} value={lang}>
+              {lang.charAt(0).toUpperCase() + lang.slice(1)}
+            </option>
+          ))}
+        </select>
       </div>
       <div style={{ height: 'calc(100% - 40px)' }}>
         <Editor
           height="100%"
-          defaultLanguage="javascript"
+          language={selectedLanguage}
           value={editorValue}
           theme="vs-dark"
           onMount={handleEditorDidMount}
+          onChange={(value) => {
+            if (value !== undefined) {
+              setEditorValue(value);
+            }
+          }}
           options={{
             minimap: { enabled: true },
             fontSize: 14,
             wordWrap: 'on',
             automaticLayout: true,
-          }}
-          onChange={(value) => {
-            if (value !== undefined) {
-              setEditorValue(value);
-            }
           }}
         />
       </div>

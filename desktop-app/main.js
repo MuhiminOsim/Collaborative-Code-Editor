@@ -16,6 +16,7 @@ expressApp.use(cors());
 // Serve static files
 expressApp.use(express.static(__dirname));
 expressApp.use(express.static(path.join(__dirname, 'node_modules')));
+expressApp.use('/monaco-editor', express.static(path.join(__dirname, 'node_modules/monaco-editor/min')));
 
 // Serve host interface
 expressApp.get('/', (req, res) => {
@@ -99,9 +100,7 @@ const startServer = async (initialPort) => {
     try {
       await new Promise((resolve, reject) => {
         server.listen(currentPort, '0.0.0.0', () => {
-          console.log(`Server running on:`);
-          console.log(`- Local: http://localhost:${currentPort}`);
-          console.log(`- Network: http://${localIP}:${currentPort}`);
+          console.log(`Server running on: http://${localIP}:${currentPort}`);
           resolve();
         }).on('error', (err) => {
           if (err.code === 'EADDRINUSE') {
@@ -112,7 +111,7 @@ const startServer = async (initialPort) => {
           }
         });
       });
-      return currentPort; // Successfully started server
+      return { port: currentPort, ip: localIP }; // Return both port and IP
     } catch (err) {
       if (attempt === maxAttempts - 1) {
         throw new Error(`Could not find an available port after ${maxAttempts} attempts`);
@@ -125,19 +124,20 @@ const startServer = async (initialPort) => {
 // Create the browser window
 async function createWindow() {
   try {
-    const port = await startServer(3001);
+    const { port, ip } = await startServer(3001);
     
     mainWindow = new BrowserWindow({
       width: 1200,
       height: 800,
       webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, 'preload.js')
       }
     });
 
-    // Load the host interface
-    mainWindow.loadURL(`http://localhost:${port}`);
+    // Load the host interface using IP address
+    mainWindow.loadURL(`http://${ip}:${port}`);
 
     // Open DevTools in development
     if (process.env.NODE_ENV === 'development') {
